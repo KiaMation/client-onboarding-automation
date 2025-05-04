@@ -18,8 +18,10 @@ jobs:
       - name: Install dependencies  
         run: pip install fpdf requests  
 
-      - name: Run data validation  
-        run: python data_validation.py  
+      - name: Run data validation
+        run: |
+          echo '${{ toJson(github.event) }}' > payload.json
+          python data_validation.py < payload.json
 
       - name: Generate PDF contract  
         run: python pdf_generator.py  
