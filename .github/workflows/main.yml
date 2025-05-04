@@ -1,0 +1,32 @@
+name: Client Onboarding Automation  
+on:  
+  repository_dispatch:  
+    types: [form_submitted]  
+
+jobs:  
+  process-form:  
+    runs-on: ubuntu-latest  
+    steps:  
+      - name: Checkout code  
+        uses: actions/checkout@v4  
+
+      - name: Set up Python  
+        uses: actions/setup-python@v4  
+        with:  
+          python-version: '3.10'  
+
+      - name: Install dependencies  
+        run: pip install fpdf requests  
+
+      - name: Run data validation  
+        run: python data_validation.py  
+
+      - name: Generate PDF contract  
+        run: python pdf_generator.py  
+
+      - name: Update Airtable  
+        run: |  
+          curl -X POST "https://api.airtable.com/v0/YOUR_BASE_ID/Clients" \  
+          -H "Authorization: Bearer ${{ secrets.AIRTABLE_TOKEN }}" \  
+          -H "Content-Type: application/json" \  
+          -d '{"fields": {"Name": "John Doe", "Plan": "Pro"}}'  
