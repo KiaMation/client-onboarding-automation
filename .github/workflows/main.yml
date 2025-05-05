@@ -1,34 +1,36 @@
-name: Client Onboarding Automation  
-on:  
-  repository_dispatch:  
-    types: [form_submitted]  
+name: Client Onboarding Automation
+on:
+  repository_dispatch:
+    types: [form_submitted]
 
-jobs:  
-  process-form:  
-    runs-on: ubuntu-latest  
-    steps:  
-      - name: Checkout code  
-        uses: actions/checkout@v4  
+jobs:
+  process-form:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Set up Python  
-        uses: actions/setup-python@v4  
-        with:  
-          python-version: '3.10'  
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
 
-      - name: Install dependencies  
-        run: pip install fpdf requests  
+      - name: Install dependencies
+        run: pip install fpdf requests
 
-      - name: Run data validation
+      - name: Process form data
+        env:
+          FORM_DATA: ${{ toJson(github.event.client_payload) }}
         run: |
-          echo '${{ toJson(github.event) }}' > payload.json
-          python data_validation.py < payload.json
+          echo "$FORM_DATA" > payload.json
+          python data_validation.py payload.json
+          python pdf_generator.py payload.json
 
-      - name: Generate PDF contract  
-        run: python pdf_generator.py  
-
-      - name: Update Airtable  
-        run: |  
-          curl -X POST "https://api.airtable.com/v0/YOUR_BASE_ID/Clients" \  
-          -H "Authorization: Bearer ${{ secrets.AIRTABLE_TOKEN }}" \  
-          -H "Content-Type: application/json" \  
-          -d '{"fields": {"Name": "John Doe", "Plan": "Pro"}}'  
+      - name: Update Airtable
+        env:
+          AIRTABLE_TOKEN: ${{ secrets.AIRTABLE_TOKEN }}
+        run: |
+          curl -X POST "https://api.airtable.com/v0/YOUR_BASE_ID/Clients" \
+          -H "Authorization: Bearer $AIRTABLE_TOKEN" \
+          -H "Content-Type: application/json" \
+          -d @payload.json
