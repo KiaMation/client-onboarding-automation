@@ -18,13 +18,23 @@ jobs:
       - name: Install dependencies
         run: pip install fpdf requests
 
-      - name: Process form data
+      - name: Validate form data
+        id: validation
         env:
-          FORM_DATA: ${{ toJson(github.event.client_payload) }}
+          FORM_DATA: ${{ toJson(github.event) }}
         run: |
-          echo "$FORM_DATA" > payload.json
-          python data_validation.py payload.json
-          python pdf_generator.py payload.json
+          echo "$FORM_DATA" | python data_validation.py > validation_result.json
+          echo "validation_result=$(cat validation_result.json)" >> $GITHUB_OUTPUT
+
+      - name: Check validation
+        if: ${{ fromJson(steps.validation.outputs.validation_result).status != 'success' }}
+        run: |
+          echo "Validation failed: ${{ fromJson(steps.validation.outputs.validation_result).message }}"
+          exit 1
+
+      - name: Generate PDF contract
+        run: |
+          python pdf_generator.py "$FORM_DATA"
 
       - name: Update Airtable
         env:
@@ -33,4 +43,4 @@ jobs:
           curl -X POST "https://api.airtable.com/v0/YOUR_BASE_ID/Clients" \
           -H "Authorization: Bearer $AIRTABLE_TOKEN" \
           -H "Content-Type: application/json" \
-          -d @payload.json
+          -d '$FORM_DATA'
