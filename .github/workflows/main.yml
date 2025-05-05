@@ -38,7 +38,7 @@ jobs:
 
       - name: Update Airtable
         env:
-          AIRTABLE_TOKEN: ${{ secrets.AIRTABLE_TOKEN }}
+          AIRTABLE_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           curl -X POST "https://api.airtable.com/v0/YOUR_BASE_ID/Clients" \
           -H "Authorization: Bearer $AIRTABLE_TOKEN" \
